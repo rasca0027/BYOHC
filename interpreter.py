@@ -21,7 +21,11 @@ def rename(exp, a={}, count=0):
         a[exp[1]] = count
         return ["lam", str(count), rename(exp[2], a, count)]
     else: # app
-        return ["app", rename(exp[1]), replacement(exp[2], count)]
+        if exp[2][0] == "var":
+            return ["app", rename(exp[1]), replacement(exp[2], count)]
+        else:
+            return ["app", rename(exp[1]), rename(exp[2], {}, 100)]
+
 
 #print rename(["app",["lam","x",["lam","y",["var","xy"]]],["var","y"]])
 #print rename(["app",["lam","a",["app",["var","a"],["var","a"]]],["lam","b",["lam","c",["var","c"]]]])
@@ -30,23 +34,35 @@ def rename(exp, a={}, count=0):
 
 #  \b (\c c)(a))d
 # ["app",["lam","a",["lam","b",["app",["lam","c",["var","c"]],["var","a"]]]],["var","d"]] 
+# = ["lam","b",["app",["lam","c",["var","c"]],["var","d"]]]
 
-def sub(l, x, a):
+
+def sub(l, x={}, a=''):
     # l = ["lam","a",["lam","b",["app",["lam","c",["var","c"]],["var","a"]]]]
     # a = ["var","d"]
-    print 'l=',l 
-    if l[0] == "var" or l[0] == "app":
-        return l
-    elif l[2][0] == "var":
-        if l[1] == x:
-            l[2] = a
-        return l
-    else:
-        # move on
-        l = l[2]
-        x = l[1]
-        return sub(l, x, a)
+    # l2 = ["lam","b",["app",["lam","c",["var","c"]],["var","a"]]]
+    # x = {"a": ["var","d"]}
+    # l3 = ["app",["lam","c",["var","c"]],["var","a"]]
+    # x = {"a":["var","d"]}
+    try:
+        if l[2][0] == "var":
+            for k in x:
+                if l[2][1] == k:
+                    l[2] = x[k]
+            return l
+            # l = ["lam","b",["app",["lam","c",["var","c"]]],["var","d"]]
+    finally:
+        if l[0] == "var" or l[0] == "app":
+            return l
+        # lam
+        else:
+            # sub(["lam","b",["app",["lam","c",["var","c"]],["var","a"]]],"x",["var","d"])
+            if a != '':
+                x[l[1]] = a  # x = {"a":["var","d"]}
+            l = l[2]
+            return sub(l, x)
 
+#print sub(['lam', 'true', ['app', ['lam', 'false', ['app', ['lam', 'and', ['app', ['app', ['var', 'and'], ['var', 'true']], ['var', 'true']]], ['lam', 'a', ['lam', 'b', ['app', ['app', ['var', 'a'], ['var', 'b']], ['var', 'false']]]]]], ['lam', 'a', ['lam', 'b', ['var', 'b']]]]],{},['lam', 'a', ['lam', 'b', ['var', 'a']]])
 
 def weak_normal_form(exp):
     if exp[0] == "var":
@@ -56,13 +72,13 @@ def weak_normal_form(exp):
     else:
         a = exp[2]
         l = exp[1]
-        exp = sub(l, '', a)
+        exp = sub(l, {}, a)
         return weak_normal_form(exp)
 
 #print weak_normal_form(["app",["lam","x",["lam","y",["var","x"]]],["lam","x",["lam","y",["var","y"]]]])
 #print weak_normal_form(["app",["lam","a",["lam","b",["app",["lam","c",["var","c"]],["var","a"]]]],["var","d"]])
-#print weak_normal_form(["lam","b",["app",["lam","c",["var","c"]],["var","d"]]])
-
+#print weak_normal_form(["app",["lam","true",["app",["lam","false",["app",["lam","and",["app",["app",["var","and"],["var","true"]],["var","true"]]],["lam","a",["lam","b",["app",["app",["var","a"],["var","b"]],["var","false"]]]]]],["lam","a",["lam","b",["var","b"]]]]],["lam","a",["lam","b",["var","a"]]]])
+print weak_normal_form(["app",["lam","true",["app",["lam","false",["app",["lam","and",["app",["app",["var","and"],["var","true"]],["var","true"]]],["lam","a",["lam","b",["app",["app",["var","a"],["var","b"]],["var","false"]]]]]],["lam","a",["lam","b",["var","b"]]]]],["lam","a",["lam","b",["var","a"]]]])
 #print weak_normal_form(["app",["lam","c",["var","c"]],["var","d"]])
 
 
